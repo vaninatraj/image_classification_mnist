@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import os
 import h5py
+import matplotlib.pyplot as plt
 import create_data
 
 class DeepCNN:
@@ -70,14 +71,15 @@ class DeepCNN:
         print("Test Loss : {0}".format(loss))
 
     def predict(self, path):
-        self.img = load_img(path, target_size=(28, 28))
+        self.img = load_img(path, target_size=(28, 28), grayscale=True)
+        plt.imshow(self.img)
         self.img = img_to_array(self.img)
         self.img = self.img.astype('float32')
         self.img /= 255
         self.img = np.expand_dims(self.img, axis=0)
 
         model = load_model(os.path.join("..", "models", "trained_model.h5"))
-        predicted = model.predict(self.img)
+        predicted = np.argmax(model.predict(self.img))
         print("Predicted Class : {0}".format(predicted))
 
 mnist = DeepCNN()
@@ -85,4 +87,4 @@ mnist.define()
 mnist.compile()
 mnist.train()
 mnist.test()
-mnist.predict("test.png")
+# mnist.predict("test.png")

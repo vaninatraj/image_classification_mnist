@@ -4,39 +4,25 @@ from keras.preprocessing.image import load_img, img_to_array
 from keras.models import load_model, save_model
 from keras.optimizers import Adam
 from keras.utils import to_categorical
-from sklearn.model_selection import train_test_split
 import numpy as np
 import os
 import h5py
-import matplotlib.pyplot as plt
-import create_data
 
 class DeepCNN:
-    def __init__(self):
-        print("Preparing Data")
-        self.num_classes = 10
-        (x_train, y_train), (x_test, y_test) = create_data.load_data()
-        x_train, x_validation,  y_train, y_validation = train_test_split(x_train, y_train, test_size=0.2)
-        
-        self.x_train = x_train.reshape(x_train.shape[0], 28, 28, 1)
-        self.x_validation = x_validation.reshape(x_validation.shape[0], 28, 28, 1)
-        self.x_test = x_test.reshape(x_test.shape[0], 28, 28, 1)
-
-        self.x_train = self.x_train.astype('float32')
-        self.x_validation = self.x_validation.astype('float32')
-        self.x_test = self.x_test.astype('float32')
-
-        self.x_train /= 255
-        self.x_validation /= 255
-        self.x_test /= 255
-
-        self.y_train = to_categorical(y_train, self.num_classes)
-        self.y_validation = to_categorical(y_validation, self.num_classes)
-        self.y_test = to_categorical(y_test, self.num_classes)
+    def __init__(self, x_train, y_train, x_test, y_test, x_validation, y_validation, input_shape, num_classes):
+        print("Loading Class...")
+        self.input_shape = input_shape
+        self.num_classes = num_classes
+        self.x_train = x_train
+        self.y_train = y_train
+        self.x_test = x_test
+        self.y_test = y_test
+        self.x_validation = x_validation
+        self.y_validation = y_validation
 
     def define(self):
         model = Sequential()
-        model.add(Conv2D(32, (3,3), input_shape=(28,28,1), activation='relu'))
+        model.add(Conv2D(32, (3,3), input_shape=self.input_shape, activation='relu'))
         model.add(Conv2D(64, (3,3), activation='relu'))
         model.add(MaxPooling2D(2,2))
         model.add(Dropout(0.25))
@@ -49,9 +35,8 @@ class DeepCNN:
         model.add(Flatten())
         model.add(Dense(128, activation='relu'))
         model.add(Dropout(0.5))
-        model.add(Dense(10, activation='softmax'))
+        model.add(Dense(self.num_classes, activation='softmax'))
         self.model = model
-        return self
 
     def compile(self, epochs=10):
         self.optimzer = Adam(lr=0.01)
@@ -66,13 +51,12 @@ class DeepCNN:
     
     def test(self):
         model = load_model(os.path.join("..", "models", "trained_model.h5"))
-        acc, loss = model.evaluate(self.x_test, self.y_test)
+        loss, acc = model.evaluate(self.x_test, self.y_test)
         print("Test Accuarcy : {0}".format(acc))
         print("Test Loss : {0}".format(loss))
 
     def predict(self, path):
-        self.img = load_img(path, target_size=(28, 28), grayscale=True)
-        plt.imshow(self.img)
+        self.img = load_img(path, target_size=(self.input_shape[0], self.input_shape[1]), grayscale=True)
         self.img = img_to_array(self.img)
         self.img = self.img.astype('float32')
         self.img /= 255
@@ -81,10 +65,3 @@ class DeepCNN:
         model = load_model(os.path.join("..", "models", "trained_model.h5"))
         predicted = np.argmax(model.predict(self.img))
         print("Predicted Class : {0}".format(predicted))
-
-mnist = DeepCNN()
-mnist.define()
-mnist.compile()
-mnist.train()
-mnist.test()
-# mnist.predict("test.png")
